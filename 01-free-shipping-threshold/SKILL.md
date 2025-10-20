@@ -1,5 +1,5 @@
 ---
-name: Free Shipping Threshold Analysis
+name: free-shipping-threshold-analysis
 description: Analyzes Fulfil order data to determine profitable free shipping thresholds using order value distribution, hero product analysis, and shipping economics. Use when merchants ask about free shipping strategy, threshold optimization, shipping offers, AOV analysis, or need data-driven shipping decisions. Requires access to Fulfil data warehouse (sales_orders, shipments tables).
 ---
 

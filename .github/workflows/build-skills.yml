@@ -25,16 +25,29 @@ jobs:
           chmod +x build.sh
           ./build.sh
 
-      - name: Check for changes
-        id: verify-changed-files
-        run: |
-          git diff --quiet docs/ || echo "changed=true" >> $GITHUB_OUTPUT
-
-      - name: Commit and push changes
-        if: steps.verify-changed-files.outputs.changed == 'true'
+      - name: Deploy to gh-pages branch
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/
-          git commit -m "Build skill packages [skip ci]"
-          git push
+
+          # Create orphan gh-pages branch if it doesn't exist
+          git fetch origin gh-pages || git checkout --orphan gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
+          # Remove all files except docs/
+          git rm -rf . || true
+          git clean -fdx -e docs
+
+          # Move docs contents to root
+          if [ -d "docs" ]; then
+            mv docs/* . || true
+            mv docs/.* . 2>/dev/null || true
+            rm -rf docs
+          fi
+
+          # Add and commit
+          git add .
+          git commit -m "Build skill packages from ${GITHUB_SHA::7}" || echo "No changes to commit"
+
+          # Force push to gh-pages
+          git push origin gh-pages --force

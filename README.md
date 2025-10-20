@@ -38,7 +38,15 @@ For detailed instructions, see the [full documentation](https://fulfil-website-b
 
 Skill packages are automatically built and deployed via GitHub Actions on every push to the `master` branch.
 
-To build manually:
+**How it works**:
+1. You push changes to `master` branch
+2. GitHub Action runs `build.sh`
+3. Generated files are committed to `gh-pages` branch
+4. GitHub Pages deploys from `gh-pages` branch
+
+This keeps `master` clean with only source files, while `gh-pages` contains the built artifacts.
+
+To build manually (for testing):
 
 ```bash
 ./build.sh

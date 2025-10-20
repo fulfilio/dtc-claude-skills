@@ -36,33 +36,15 @@ For detailed instructions, see the [full documentation](https://fulfil.io/resour
 
 ### Building Skill Packages
 
-Skill packages are automatically built and deployed via GitHub Actions on every push to the `master` branch.
+Skills are built and packaged as part of the [fulfil.io website](https://github.com/fulfilio/website) deployment process.
 
 **How it works**:
-1. You push changes to `master` branch
-2. GitHub Action runs `build.py` (Python + Jinja2)
-3. Generated files are committed to `gh-pages` branch
-4. GitHub Pages deploys from `gh-pages` branch
+1. This repository is included as a git submodule in the website repository
+2. The website's build script (`scripts/build_claude_skills.py`) scans for skill directories
+3. Each skill is packaged into a ZIP file and copied to `static/downloads/claude-skills/`
+4. Skills are served directly from the website at `/static/downloads/claude-skills/`
 
-This keeps `master` clean with only source files, while `gh-pages` contains the built artifacts.
-
-To build manually (for testing):
-
-```bash
-pip install -r requirements.txt
-python build.py
-```
-
-This will:
-- Parse frontmatter from each skill's README.md
-- Create ZIP files for each skill in `docs/downloads/`
-- Generate the download index page at `docs/index.html` using Jinja2 templates
-- Display build summary
-
-The build process runs automatically when:
-- Any skill folder (`##-skill-name/`) is modified
-- Build script or templates are updated
-- The workflow file is changed
+The website build process automatically creates ZIP packages from all skill directories matching the `##-skill-name` pattern.
 
 ### Skill Structure
 
@@ -71,29 +53,11 @@ Each skill folder follows this structure:
 ```
 ##-skill-name/
 ├── SKILL.md           # Comprehensive guide for Claude
-├── README.md          # User-facing documentation with frontmatter
+├── README.md          # User-facing documentation
 └── QUICK_REFERENCE.md # Quick reference card
 ```
 
-**README.md Frontmatter**:
-```yaml
----
-title: Skill Title
-description: Short description shown on download page
-author: Your Name
-version: 1.0
-tags: [tag1, tag2, tag3]
-learn_more_url: https://fulfil-website.com/resources/claude-skills/your-skill
----
-```
-
-**Frontmatter Fields**:
-- `title` (required): Display name of the skill
-- `description` (required): Brief description shown on download page
-- `version` (required): Version number (e.g., 1.0, 1.1)
-- `author`: Author or organization name
-- `tags`: List of categorization tags
-- `learn_more_url`: URL to detailed documentation (opens in new tab)
+The skill package (ZIP file) includes all files in the skill directory.
 
 ### Contributing
 
@@ -102,13 +66,11 @@ We welcome contributions! To add a new skill:
 1. Fork this repository
 2. Create a new skill folder: `##-skill-name/`
 3. Include all three markdown files (SKILL.md, README.md, QUICK_REFERENCE.md)
-4. Add frontmatter to README.md with title, description, version, author, and tags
-5. Run `python build.py` to test locally
-6. Submit a pull request
+4. Submit a pull request
 
-The GitHub Action will automatically build and deploy your skill once merged.
+Your skill will be automatically packaged and deployed as part of the fulfil.io website build process once merged.
 
-For contribution guidelines, see the [documentation](https://fulfil.io/resources/claude-skills).
+For contribution guidelines and skill development best practices, see the [documentation](https://fulfil.io/resources/claude-skills) and [SKILLS_BEST_PRACTICES.md](SKILLS_BEST_PRACTICES.md).
 
 ## License
 

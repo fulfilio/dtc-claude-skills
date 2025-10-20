@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DTC Claude Skills - Downloads</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .learn-more {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .learn-more:hover {
+            transform: translateY(-2px);
+        }
+
+        .downloads {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .downloads h2 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        .skill-item:last-child {
+            border-bottom: none;
+        }
+
+        .skill-item:hover {
+            background: #f8f9fa;
+        }
+
+        .skill-name {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .download-btn:hover {
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            header p {
+                font-size: 1em;
+            }
+
+            .skill-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .downloads {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DTC Claude Skills</h1>
+            <p>Data-driven analysis skills for Fulfil merchants</p>
+            <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills" class="learn-more">Learn More</a>
+        </header>
+
+        <div class="downloads">
+            <h2>Download Skills</h2>
+            <div class="skill-item">
+                <span class="skill-name">Free Shipping Threshold</span>
+                <a href="downloads/01-free-shipping-threshold.zip" class="download-btn">📥 Download</a>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                <a href="https://github.com/fulfilio/dtc-claude-skills" target="_blank">View on GitHub</a> •
+                <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills">Documentation</a> •
+                <a href="https://github.com/fulfilio/mcp-server-fulfil">Fulfil MCP Connector</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

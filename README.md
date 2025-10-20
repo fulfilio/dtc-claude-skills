@@ -6,18 +6,18 @@ A curated collection of Claude skills designed specifically for Fulfil merchants
 
 For complete documentation, installation guides, and examples, visit:
 
-**[https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills](https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills)**
+**[https://fulfil.io/resources/claude-skills](https://fulfil.io/resources/claude-skills)**
 
 ## 📥 Downloads
 
-Download ready-to-use skills from our GitHub Pages:
+Download ready-to-use skills from the Fulfil website:
 
-**[https://fulfilio.github.io/dtc-claude-skills/](https://fulfilio.github.io/dtc-claude-skills/)**
+**[https://fulfil.io/resources/claude-skills](https://fulfil.io/resources/claude-skills)**
 
 ## Available Skills
 
 ### 1. Free Shipping Threshold Analysis
-**[Download](https://fulfilio.github.io/dtc-claude-skills/downloads/01-free-shipping-threshold.zip)** | [Details](./01-free-shipping-threshold/README.md)
+**[Download](https://fulfil.io/static/downloads/claude-skills/01-free-shipping-threshold.zip)** | [Details](./01-free-shipping-threshold/README.md)
 
 Determine your most profitable free shipping threshold using data-driven analysis of your order patterns.
 
@@ -30,7 +30,7 @@ Determine your most profitable free shipping threshold using data-driven analysi
 3. **Upload the files to Claude** in a new conversation
 4. **Ask Claude to run the analysis**
 
-For detailed instructions, see the [full documentation](https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills).
+For detailed instructions, see the [full documentation](https://fulfil.io/resources/claude-skills).
 
 ## Development
 
@@ -108,7 +108,7 @@ We welcome contributions! To add a new skill:
 
 The GitHub Action will automatically build and deploy your skill once merged.
 
-For contribution guidelines, see the [documentation](https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills).
+For contribution guidelines, see the [documentation](https://fulfil.io/resources/claude-skills).
 
 ## License
 

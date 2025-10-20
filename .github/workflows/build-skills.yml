@@ -6,7 +6,9 @@ on:
       - master
     paths:
       - '[0-9][0-9]-*/**'
-      - 'build.sh'
+      - 'build.py'
+      - 'templates/**'
+      - 'requirements.txt'
       - '.github/workflows/build-skills.yml'
 
 permissions:
@@ -20,10 +22,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
       - name: Run build script
         run: |
-          chmod +x build.sh
-          ./build.sh
+          python build.py
 
       - name: Deploy to gh-pages branch
         run: |

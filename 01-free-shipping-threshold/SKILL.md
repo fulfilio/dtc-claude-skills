@@ -1,617 +1,293 @@
-# Free Shipping Threshold Analysis Skill
+---
+name: Free Shipping Threshold Analysis
+description: Analyzes Fulfil order data to determine profitable free shipping thresholds using order value distribution, hero product analysis, and shipping economics. Use when merchants ask about free shipping strategy, threshold optimization, shipping offers, AOV analysis, or need data-driven shipping decisions. Requires access to Fulfil data warehouse (sales_orders, shipments tables).
+---
+
+# Free Shipping Threshold Analysis
 
 ## Overview
-This skill analyzes a merchant's order data in Fulfil to determine the most profitable free shipping threshold. It implements the methodology described by Victor Paycro for data-driven threshold optimization that balances conversion gains against margin impact.
 
-## Purpose
+This skill analyzes merchant order data in Fulfil to determine the most profitable free shipping threshold. It implements a data-driven methodology that balances conversion gains against margin impact, avoiding the common mistake of setting thresholds based on guesswork or competitor behavior.
+
+## When to Use
+
 Use this skill when merchants need to:
-- Determine optimal free shipping thresholds for their e-commerce store
-- Understand their order value distribution and hero product pricing
-- Calculate the profit trade-offs of different threshold options
-- Make data-driven decisions about free shipping strategies before running A/B tests
+- Determine optimal free shipping thresholds for e-commerce
+- Understand order value distribution and clustering patterns
+- Identify hero products and their pricing impact
+- Calculate profit trade-offs of different threshold options
+- Make data-driven shipping strategy decisions before A/B testing
 
 ## Required Data
-This analysis requires access to the Fulfil data warehouse with the following tables:
-- `sales_orders` - Order value distribution and product data (includes SHIPPING line items)
-- `shipments` - Shipping cost data
-- `products` - Product pricing and margin data
 
-**Critical: Understanding Shipping Line Items**
+Access to Fulfil data warehouse with these tables:
+- `sales_orders` - Order values, line items, channels
+- `shipments` - Shipping costs and fulfillment data
+- Minimum 6 months of order history (1,000+ orders recommended)
 
-Shipping line items appear inconsistently across merchants and channels:
+## Critical Constraints
 
-1. **When SHIPPING line exists with amount > $0**: Customer paid for shipping
-2. **When SHIPPING line exists with amount = $0**: Free shipping was offered explicitly
-3. **When NO SHIPPING line exists**: Free shipping was offered (implicit)
+**Marketplace Channel Exclusion**: Always ask if data includes marketplace channels (Amazon, Walmart, eBay, Etsy, Target). Exclude these from analysis because merchants don't control marketplace shipping policies and their inclusion creates misleading recommendations.
 
-The SHIPPING line item may use different `product_code` values across merchants (e.g., "SHIPPING", "Shipping", "SHIP", etc.). The skill should search flexibly for shipping-related products.
+**Shipping Line Item Patterns**: Understand how shipping appears in order data:
+- SHIPPING line with amount > $0 = customer paid shipping
+- SHIPPING line with amount = $0 = explicit free shipping
+- No SHIPPING line = implicit free shipping
 
-**Critical: Marketplace Channel Exclusion**
+Product codes vary across merchants ("SHIPPING", "Shipping", "SHIP"). Search flexibly.
 
-Always ask the user if their data includes marketplace channels (Amazon, Walmart, eBay, etc.). These should be EXCLUDED from analysis because:
-- Merchants don't control marketplace shipping policies
-- Marketplace fulfillment (FBA, WFS, etc.) skews shipping cost data
-- Marketplace AOV patterns differ from DTC optimization strategies
-- Including marketplace data creates misleading threshold recommendations
+## Analysis Workflow
 
-**Common marketplace channels to exclude**: Amazon, Walmart, eBay, Etsy, Target, Costco, Sam's Club
+Copy this checklist and track progress:
 
-## Analysis Methodology
-
-### Step 0: Initial Discovery & Channel Filtering
-
-**Before running any analysis**, Claude must:
-
-1. **Identify available channels**:
-```sql
-SELECT 
-  channel_name,
-  COUNT(*) as order_count,
-  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as pct_of_orders
-FROM sales_orders
-WHERE state IN ('confirmed', 'done', 'processing')
-  AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-GROUP BY channel_name
-ORDER BY order_count DESC;
+```
+Free Shipping Analysis Progress:
+- [ ] Step 0: Identify channels and exclude marketplaces
+- [ ] Step 1: Analyze order value distribution
+- [ ] Step 2: Identify hero products
+- [ ] Step 3: Calculate shipping economics
+- [ ] Step 4: Evaluate threshold candidates
+- [ ] Step 5: Generate recommendations
 ```
 
-2. **Ask the user**: "I see you have orders from [list channels]. Should I exclude any marketplace channels like Amazon, Walmart, or eBay from this analysis? These channels typically have their own shipping policies that merchants don't control."
+### Step 0: Channel Discovery & Filtering
 
-3. **Identify shipping line patterns by channel**:
-```sql
-SELECT 
-  channel_name,
-  COUNT(*) as total_orders,
-  COUNT(CASE WHEN EXISTS(
-    SELECT 1 FROM UNNEST(lines) 
-    WHERE LOWER(product_code) LIKE '%ship%' 
-       OR LOWER(product_name) LIKE '%shipping%'
-  ) THEN 1 END) as orders_with_shipping_line,
-  ROUND(COUNT(CASE WHEN EXISTS(
-    SELECT 1 FROM UNNEST(lines) 
-    WHERE LOWER(product_code) LIKE '%ship%' 
-       OR LOWER(product_name) LIKE '%shipping%'
-  ) THEN 1 END) * 100.0 / COUNT(*), 2) as pct_with_shipping_line
-FROM sales_orders
-WHERE state IN ('confirmed', 'done', 'processing')
-  AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-GROUP BY channel_name
-ORDER BY total_orders DESC;
-```
+**Before running analysis**, identify available sales channels and confirm marketplace exclusions with the merchant.
 
-4. **Interpret shipping line patterns**:
-   - 0% shipping lines = All orders get free shipping
-   - 100% shipping lines = Channel explicitly tracks shipping (may be free or paid)
-   - Mixed % = Channel offers free shipping conditionally
+1. Query available channels with order volumes
+2. Ask: "Should I exclude marketplace channels like Amazon, Walmart, or eBay? These have their own shipping policies."
+3. Identify shipping line patterns by channel (helps understand current free shipping behavior)
+4. Update all subsequent queries to exclude confirmed marketplace channels
 
-5. **Update all subsequent queries** to exclude marketplace channels identified by the user.
+**For detailed SQL queries**: See [METHODOLOGY.md](METHODOLOGY.md) Step 0
 
-### Step 1: Map Your Order Landscape
+### Step 1: Map Order Landscape
+
 **Objective**: Understand where customer orders naturally cluster
 
-**Data to Pull**:
-1. Order value distribution (last 6-12 months of confirmed/done orders)
-2. Hero product prices (products driving most revenue)
-3. Current average shipping cost per order
+Analyze:
+1. Order value distribution (group into $10 buckets)
+2. Identify peak order value ranges
+3. Understand order concentration patterns
 
-**SQL Queries**:
+**For detailed SQL queries**: See [METHODOLOGY.md](METHODOLOGY.md) Step 1
 
-```sql
--- Order Value Distribution
--- Groups orders into $10 buckets to identify clustering patterns
-WITH order_totals AS (
-  SELECT 
-    id,
-    order_number,
-    order_date,
-    -- Calculate total order value from line items
-    ROUND((
-      SELECT SUM(amount)
-      FROM UNNEST(lines)
-      WHERE line_type = 'sale'
-    ), 2) as order_value
-  FROM sales_orders
-  WHERE state IN ('confirmed', 'done', 'processing')
-    AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-    AND (
-      SELECT SUM(amount)
-      FROM UNNEST(lines)
-      WHERE line_type = 'sale'
-    ) > 0
-)
-SELECT 
-  FLOOR(order_value / 10) * 10 as value_bucket_start,
-  FLOOR(order_value / 10) * 10 + 10 as value_bucket_end,
-  COUNT(*) as order_count,
-  ROUND(AVG(order_value), 2) as avg_order_value,
-  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) as pct_of_orders
-FROM order_totals
-WHERE order_value < 500  -- Focus on reasonable threshold range
-GROUP BY FLOOR(order_value / 10)
-ORDER BY value_bucket_start;
-```
+### Step 2: Identify Hero Products
 
-```sql
--- Hero Products (Top Revenue Drivers)
--- Identifies products with highest revenue contribution and their price points
-SELECT 
-  lines.product_code,
-  lines.product_name,
-  lines.product_category,
-  COUNT(DISTINCT id) as orders_with_product,
-  ROUND(AVG(lines.unit_price), 2) as avg_unit_price,
-  SUM(lines.quantity) as total_units_sold,
-  ROUND(SUM(lines.amount), 2) as total_revenue,
-  ROUND(SUM(lines.amount) * 100.0 / SUM(SUM(lines.amount)) OVER(), 2) as pct_of_total_revenue
-FROM sales_orders,
-UNNEST(lines) as lines
-WHERE state IN ('confirmed', 'done', 'processing')
-  AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-  AND lines.line_type = 'sale'
-  AND lines.product_code IS NOT NULL
-GROUP BY lines.product_code, lines.product_name, lines.product_category
-ORDER BY total_revenue DESC
-LIMIT 20;
-```
+**Objective**: Find products driving most revenue and their price points
 
-```sql
--- Average Shipping Cost Analysis
--- Calculates mean and median shipping costs to understand typical fulfillment expense
--- Also identifies current free shipping patterns
-SELECT 
-  COUNT(*) as total_shipments,
-  ROUND(AVG(shipment_cost), 2) as avg_shipping_cost,
-  ROUND(APPROX_QUANTILES(shipment_cost, 100)[OFFSET(50)], 2) as median_shipping_cost,
-  ROUND(MIN(shipment_cost), 2) as min_cost,
-  ROUND(MAX(shipment_cost), 2) as max_cost,
-  shipment_cost_currency as currency
-FROM shipments
-WHERE state = 'done'
-  AND shipped_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-  AND shipment_cost > 0
-  AND shipment_cost < 50  -- Filter outliers
-GROUP BY shipment_cost_currency;
-```
+Analyze:
+1. Top 10-20 products by revenue contribution
+2. Average selling prices
+3. Product categories and patterns
+4. Low-margin products (items under typical threshold ranges)
 
-```sql
--- Shipping Line Item Analysis
--- Analyzes shipping line items to understand current free shipping patterns
--- NOTE: Absence of shipping line = implicit free shipping
-WITH order_shipping AS (
-  SELECT 
-    so.id,
-    so.order_number,
-    so.order_date,
-    so.channel_name,
-    -- Product order value (excluding shipping)
-    ROUND((
-      SELECT SUM(amount)
-      FROM UNNEST(so.lines)
-      WHERE line_type = 'sale' 
-        AND LOWER(product_code) NOT LIKE '%ship%'
-        AND LOWER(COALESCE(product_name, '')) NOT LIKE '%shipping%'
-    ), 2) as product_value,
-    -- Shipping charge (flexible detection)
-    ROUND(COALESCE((
-      SELECT SUM(amount)
-      FROM UNNEST(so.lines)
-      WHERE line_type = 'sale' 
-        AND (LOWER(product_code) LIKE '%ship%' 
-             OR LOWER(COALESCE(product_name, '')) LIKE '%shipping%')
-    ), 0), 2) as shipping_charged,
-    -- Check if shipping line exists
-    EXISTS(
-      SELECT 1 FROM UNNEST(so.lines) 
-      WHERE LOWER(product_code) LIKE '%ship%' 
-         OR LOWER(COALESCE(product_name, '')) LIKE '%shipping%'
-    ) as has_shipping_line
-  FROM sales_orders so
-  WHERE so.state IN ('confirmed', 'done', 'processing')
-    AND so.order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-    AND so.channel_name NOT IN ('Amazon.com', 'Costco', 'Walmart.com', 'eBay')  -- CUSTOMIZE: Add merchant's marketplace channels
-)
-SELECT 
-  -- Total orders
-  COUNT(*) as total_orders,
-  
-  -- Shipping line presence
-  COUNT(CASE WHEN has_shipping_line THEN 1 END) as orders_with_shipping_line,
-  COUNT(CASE WHEN NOT has_shipping_line THEN 1 END) as orders_without_shipping_line,
-  ROUND(COUNT(CASE WHEN has_shipping_line THEN 1 END) * 100.0 / COUNT(*), 2) as pct_with_shipping_line,
-  
-  -- Free shipping breakdown
-  COUNT(CASE WHEN has_shipping_line AND shipping_charged = 0 THEN 1 END) as free_shipping_explicit,
-  COUNT(CASE WHEN NOT has_shipping_line THEN 1 END) as free_shipping_implicit,
-  COUNT(CASE WHEN (has_shipping_line AND shipping_charged = 0) OR NOT has_shipping_line THEN 1 END) as total_free_shipping,
-  ROUND(COUNT(CASE WHEN (has_shipping_line AND shipping_charged = 0) OR NOT has_shipping_line THEN 1 END) * 100.0 / COUNT(*), 2) as pct_free_shipping,
-  
-  -- Paid shipping
-  COUNT(CASE WHEN has_shipping_line AND shipping_charged > 0 THEN 1 END) as paid_shipping_orders,
-  ROUND(COUNT(CASE WHEN has_shipping_line AND shipping_charged > 0 THEN 1 END) * 100.0 / COUNT(*), 2) as pct_paid_shipping,
-  
-  -- Shipping charge statistics (for paid shipping only)
-  ROUND(AVG(CASE WHEN shipping_charged > 0 THEN shipping_charged END), 2) as avg_shipping_charge,
-  ROUND(APPROX_QUANTILES(CASE WHEN shipping_charged > 0 THEN shipping_charged END, 100)[OFFSET(50)], 2) as median_shipping_charge,
-  ROUND(MIN(CASE WHEN shipping_charged > 0 THEN shipping_charged END), 2) as min_shipping_charge,
-  ROUND(MAX(CASE WHEN shipping_charged > 0 THEN shipping_charged END), 2) as max_shipping_charge,
-  
-  -- Order value comparison
-  ROUND(AVG(CASE WHEN (has_shipping_line AND shipping_charged = 0) OR NOT has_shipping_line THEN product_value END), 2) as avg_order_value_free_ship,
-  ROUND(AVG(CASE WHEN shipping_charged > 0 THEN product_value END), 2) as avg_order_value_paid_ship,
-  
-  -- Current free shipping threshold inference (for explicitly free shipping only)
-  ROUND(APPROX_QUANTILES(CASE WHEN has_shipping_line AND shipping_charged = 0 THEN product_value END, 100)[OFFSET(5)], 2) as free_ship_5th_percentile,
-  ROUND(APPROX_QUANTILES(CASE WHEN has_shipping_line AND shipping_charged = 0 THEN product_value END, 100)[OFFSET(50)], 2) as free_ship_median
-FROM order_shipping
-WHERE product_value > 0;
-```
+**For detailed SQL queries**: See [METHODOLOGY.md](METHODOLOGY.md) Step 2
 
-**Interpretation Guide:**
+### Step 3: Calculate Shipping Economics
 
-- **orders_without_shipping_line**: These orders received free shipping (no shipping charge applied)
-- **free_shipping_explicit**: Orders with shipping line where amount = $0 (conditional free shipping)
-- **free_shipping_implicit**: Orders with no shipping line (always free shipping)
-- **total_free_shipping**: All orders that received free shipping (explicit + implicit)
+**Objective**: Understand current shipping costs and patterns
 
-If `pct_free_shipping` is very high (>90%), the merchant likely offers free shipping on most/all orders already.
+Analyze:
+1. Average and median shipping costs
+2. Current free shipping patterns (if any)
+3. Shipping charge distribution for paid orders
+4. Order value comparison (free vs paid shipping)
 
-```sql
--- Low Margin Products Zone (Items under typical threshold ranges)
--- Identifies products that could bleed profit if included in free shipping offers
-SELECT 
-  lines.product_code,
-  lines.product_name,
-  ROUND(AVG(lines.unit_price), 2) as avg_unit_price,
-  COUNT(DISTINCT id) as order_count,
-  SUM(lines.quantity) as units_sold,
-  ROUND(AVG(lines.gross_profit_cpny_ccy_cache / NULLIF(lines.quantity, 0)), 2) as avg_unit_margin
-FROM sales_orders,
-UNNEST(lines) as lines
-WHERE state IN ('confirmed', 'done', 'processing')
-  AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-  AND lines.line_type = 'sale'
-  AND lines.product_code IS NOT NULL
-  AND lines.unit_price > 0
-  AND lines.unit_price < 50  -- Focus on lower-priced items
-GROUP BY lines.product_code, lines.product_name
-HAVING units_sold > 5  -- Minimum volume threshold
-ORDER BY avg_unit_price ASC
-LIMIT 30;
-```
+**For detailed SQL queries**: See [METHODOLOGY.md](METHODOLOGY.md) Step 3
 
-### Step 2: Understand the Profit Trade-off
-**Objective**: Calculate what free shipping costs vs. what it gains
+### Step 4: Evaluate Threshold Candidates
 
-**Free Shipping COSTS**:
-- Margin per order (you absorb the shipping cost)
-- Risk on low-value orders (shipping cost may exceed margin)
+**Objective**: Calculate financial implications of threshold options
 
-**Free Shipping GAINS**:
-- Higher conversion rate (removes friction)
-- Larger basket size (customers add items to qualify)
-- Lower per-unit shipping cost (via order consolidation)
+For thresholds: $30, $40, $50, $75, $100, $125, $150, $175, $200
 
-**Key Insight**: Your threshold determines which trade-off you're making. A lower threshold tests if shipping cost blocks conversion. A higher threshold tests if customers will add items to qualify.
+Calculate for each:
+1. Orders above/below threshold (volume)
+2. Average order values for each group
+3. Total shipping cost if threshold implemented
+4. Margin-to-shipping ratio (viability metric)
+5. Risk assessment
 
-### Step 3: Set Strategic Constraints
-**Objective**: Identify the "smart zone" for testing based on actual demand
+**For detailed SQL queries**: See [METHODOLOGY.md](METHODOLOGY.md) Step 4
+
+### Step 5: Generate Recommendations
+
+**Framework**: Map each threshold to a business hypothesis
+
+| Threshold | Hypothesis | Logic |
+|-----------|------------|-------|
+| Below Hero Price | Shipping cost blocks conversion on hero items | Above low-margin zone, removes friction |
+| Above Hero Price | Customers will add items to qualify | Tests basket expansion, higher AOV offsets cost |
 
 **Three Zones**:
 
 1. **DON'T TEST: Too Low ($30 and below)**
    - Bleeds profit on low-margin items
    - Shipping cost often exceeds order margin
-   - Only test here if you have very high-margin products
 
 2. **SMART ZONE: ($50-$150)**
-   - Has existing demand in your data
+   - Has existing demand in data
    - Protects margin on hero products
    - Tests realistic customer behavior
 
 3. **DON'T TEST: Too High ($200+)**
-   - No volume at this level
-   - Wastes time testing where customers don't naturally spend
-   - Only test if data shows significant orders at this value
-
-**SQL Query for Constraint Validation**:
-
-```sql
--- Volume Analysis by Threshold Candidates
--- Shows how many orders would qualify at different threshold levels
-WITH order_totals AS (
-  SELECT 
-    id,
-    order_number,
-    ROUND((
-      SELECT SUM(amount)
-      FROM UNNEST(lines)
-      WHERE line_type = 'sale'
-    ), 2) as order_value
-  FROM sales_orders
-  WHERE state IN ('confirmed', 'done', 'processing')
-    AND order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-)
-SELECT 
-  threshold,
-  SUM(CASE WHEN order_value >= threshold THEN 1 ELSE 0 END) as orders_above_threshold,
-  ROUND(SUM(CASE WHEN order_value >= threshold THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_orders_above,
-  SUM(CASE WHEN order_value < threshold THEN 1 ELSE 0 END) as orders_below_threshold,
-  ROUND(SUM(CASE WHEN order_value < threshold THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as pct_orders_below
-FROM order_totals
-CROSS JOIN UNNEST([30, 40, 50, 75, 100, 125, 150, 175, 200]) as threshold
-GROUP BY threshold
-ORDER BY threshold;
-```
-
-### Step 4: Map Thresholds to Hypotheses
-**Objective**: Frame each threshold as a testable business hypothesis
-
-**Framework**:
-
-| Threshold | Hypothesis | Profit Logic |
-|-----------|------------|--------------|
-| Below Hero Price | Shipping cost blocking conversion on hero items | • Above low-margin zone<br>• Removes friction<br>• Tests price sensitivity |
-| Above Hero Price | Customers will add items to qualify | • Where orders already happen<br>• Tests basket expansion<br>• Higher AOV offsets cost |
-
-**Example Decision Tree**:
-
-```
-Given:
-- Hero product at $100
-- Most orders cluster $50-$200
-- Low-margin items under $40
-
-Then Test:
-✓ $50 threshold
-  - Removes friction on hero product purchases
-  - Protects margin (above $40 danger zone)
-  - High volume at this level
-  
-✓ $150 threshold  
-  - Tests add-to-cart behavior
-  - Significant order volume exists here
-  - Higher AOV justifies shipping absorption
-
-✗ Skip $30
-  - Margin killer on cheap items
-  
-✗ Skip $200
-  - Insufficient volume to test
-```
-
-### Step 5: Calculate Expected Impact
-**Objective**: Quantify the financial implications of each threshold option
-
-**SQL Query for Impact Projection**:
-
-```sql
--- Impact Analysis by Threshold
--- Projects revenue, costs, and margin implications at different thresholds
-WITH order_data AS (
-  SELECT 
-    so.id,
-    so.order_number,
-    so.order_date,
-    ROUND((
-      SELECT SUM(amount)
-      FROM UNNEST(so.lines)
-      WHERE line_type = 'sale'
-    ), 2) as order_value,
-    ROUND((
-      SELECT SUM(gross_profit_cpny_ccy_cache)
-      FROM UNNEST(so.lines)
-      WHERE line_type = 'sale'
-    ), 2) as order_margin,
-    sh.shipment_cost
-  FROM sales_orders so
-  LEFT JOIN shipments sh ON sh.moves[OFFSET(0)].order_id = so.id AND sh.state = 'done'
-  WHERE so.state IN ('confirmed', 'done', 'processing')
-    AND so.order_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-),
-threshold_analysis AS (
-  SELECT 
-    threshold,
-    COUNT(*) as total_orders,
-    
-    -- Orders below threshold (would NOT get free shipping)
-    SUM(CASE WHEN order_value < threshold THEN 1 ELSE 0 END) as orders_below,
-    ROUND(AVG(CASE WHEN order_value < threshold THEN order_value END), 2) as avg_order_value_below,
-    
-    -- Orders above threshold (would GET free shipping)
-    SUM(CASE WHEN order_value >= threshold THEN 1 ELSE 0 END) as orders_above,
-    ROUND(AVG(CASE WHEN order_value >= threshold THEN order_value END), 2) as avg_order_value_above,
-    
-    -- Cost of offering free shipping
-    ROUND(AVG(CASE WHEN order_value >= threshold THEN COALESCE(shipment_cost, 0) END), 2) as avg_shipping_cost_absorbed,
-    ROUND(SUM(CASE WHEN order_value >= threshold THEN COALESCE(shipment_cost, 0) END), 2) as total_shipping_cost,
-    
-    -- Margin preservation
-    ROUND(AVG(CASE WHEN order_value >= threshold THEN order_margin END), 2) as avg_margin_above_threshold,
-    
-    -- Financial viability check
-    ROUND(AVG(CASE WHEN order_value >= threshold 
-                   THEN order_margin / NULLIF(COALESCE(shipment_cost, 1), 0) 
-                   END), 2) as margin_to_shipping_ratio
-    
-  FROM order_data
-  CROSS JOIN UNNEST([30, 40, 50, 75, 100, 125, 150, 175, 200]) as threshold
-  GROUP BY threshold
-)
-SELECT 
-  threshold,
-  total_orders,
-  orders_below,
-  orders_above,
-  ROUND(orders_above * 100.0 / total_orders, 2) as pct_qualifying_orders,
-  avg_order_value_below,
-  avg_order_value_above,
-  avg_shipping_cost_absorbed,
-  total_shipping_cost,
-  avg_margin_above_threshold,
-  margin_to_shipping_ratio,
-  CASE 
-    WHEN margin_to_shipping_ratio < 3 THEN '⚠️ Margin Risk - shipping cost high relative to margin'
-    WHEN margin_to_shipping_ratio >= 3 AND margin_to_shipping_ratio < 5 THEN '✓ Acceptable - reasonable margin buffer'
-    WHEN margin_to_shipping_ratio >= 5 THEN '✓✓ Strong - excellent margin protection'
-  END as viability_assessment
-FROM threshold_analysis
-ORDER BY threshold;
-```
+   - Insufficient volume for meaningful testing
+   - Beyond natural customer spending patterns
 
 ## Output Format
 
-When running this analysis, provide results in the following structure with visual charts:
+Provide analysis in this structure:
 
 ### 1. Executive Summary
-- Current order landscape (where orders cluster)
+- Order clustering patterns and primary zones
 - Hero product identification and pricing
 - Average shipping costs
 - Current free shipping patterns (if applicable)
 - Recommended threshold(s) with rationale
 
-### 2. Data Findings with Visualizations
+### 2. Data Findings
 
-**Order Distribution Chart**:
-- Bar chart showing order count by value bucket ($0-10, $10-20, etc.)
-- Highlight the primary cluster zone
-- Annotate key thresholds being considered
+**Order Distribution**:
+- Show order count by value bucket ($0-10, $10-20, etc.)
+- Highlight primary cluster zones
+- Note threshold candidates being considered
 
 **Hero Products**:
-- Table of top 5-10 products by revenue
-- Their average selling prices
+- Top 5-10 products by revenue
+- Average selling prices
 - Revenue contribution percentages
 
-**Shipping Economics Chart**:
-- If shipping line items exist: Distribution chart showing free vs. paid shipping orders
-- Histogram of shipping charges (for paid shipping orders)
-- Comparison of average order values: free shipping vs. paid shipping
-
-**Current Free Shipping Pattern** (if applicable):
-- Chart showing at what order values customers currently get free shipping
-- This reveals existing threshold or promotional patterns
+**Shipping Economics**:
+- If shipping lines exist: Free vs paid shipping breakdown
+- Distribution of shipping charges
+- Average order value comparison
 
 ### 3. Threshold Recommendations
+
 For each recommended threshold:
 
 **Threshold: $XX**
-- **Hypothesis**: [What customer behavior this tests]
-- **Volume**: [% of orders at/above this level]
-- **Margin Protection**: [Average margin vs shipping cost ratio]
-- **Strategic Logic**: [Why this threshold makes sense]
-- **Risk Assessment**: [What could go wrong]
-- **Expected Impact**: [Projected costs if implemented]
+- **Hypothesis**: What customer behavior this tests
+- **Volume**: % of orders at/above this level
+- **Margin Protection**: Margin-to-shipping ratio
+- **Strategic Logic**: Why this threshold makes sense
+- **Risk Assessment**: Potential concerns
+- **Expected Impact**: Projected costs
+
+**Viability Assessment** (based on margin-to-shipping ratio):
+- < 3:1 = ⚠️ Margin Risk
+- 3:1 to 5:1 = ✓ Acceptable
+- > 5:1 = ✓✓ Strong
 
 ### 4. Do Not Test
-List threshold values to avoid with explanations:
-- Too low: Would include products with insufficient margin
-- Too high: Insufficient order volume to generate meaningful results
+
+List thresholds to avoid:
+- Too low: Insufficient margin protection
+- Too high: Insufficient order volume
 
 ### 5. Next Steps
-- Recommended testing sequence (which threshold to test first)
-- Key metrics to monitor during testing
+
+- Recommended testing sequence
+- Key metrics to monitor
 - Success criteria definitions
-
-## Important Considerations
-
-**Data Quality Checks**:
-- Exclude canceled and failed orders from analysis
-- Filter out outlier shipping costs (e.g., international or oversized items if not representative)
-- Ensure sufficient data volume (minimum 1,000 orders recommended)
-- Use recent data (6-12 months) to reflect current customer behavior
-
-**Margin Calculations**:
-- If gross margin data is unavailable in order lines, work with averages or estimates
-- Account for product returns in margin calculations if data available
-- Consider different margin profiles by product category
-
-**Shipping Cost Nuances**:
-- Separate domestic vs international if significantly different
-- Account for carrier contract rates vs actual costs
-- Consider dimensional weight implications for bulky items
-
-**Testing Philosophy**:
-- This analysis tells you WHERE to test, not whether free shipping will work
-- Always A/B test before full rollout
-- Monitor both conversion rate AND average order value
-- Track profitability, not just revenue
-
-## Common Pitfalls to Avoid
-
-1. **Testing Too Low**: Don't set threshold below your low-margin product zone
-2. **Testing Without Volume**: Don't test thresholds where <10% of orders naturally occur
-3. **Ignoring Category Differences**: Consider different thresholds for different product categories if margins vary significantly
-4. **Focusing Only on AOV**: Free shipping that increases AOV but destroys margin is a failure
-5. **Not Having a Control Group**: Always A/B test; don't just implement site-wide
 
 ## Sample Output Language
 
-When presenting results, use clear, actionable language:
+Use clear, actionable language:
 
-"Based on your order data from the last 6 months:
+```
+Based on your order data from the last 6 months:
 
-**Order Landscape**: 
-Your orders cluster heavily between $50-$200 (representing 68% of all orders). There's a clear peak at $75-$100, which aligns with your hero product pricing.
+**Order Landscape**:
+Orders cluster between $50-$200 (68% of all orders). Clear peak at $75-$100.
 
-**Hero Products**: 
-Your top revenue driver is [Product X] at $95, representing 18% of total revenue. The next three products average $85-$110.
+**Hero Products**:
+Top driver is [Product X] at $95 (18% of revenue). Next three average $85-$110.
 
-**Shipping Economics**: 
-Average shipping cost is $8.50 per order, with most orders between $6-$12 to ship.
+**Shipping Economics**:
+Average cost $8.50/order. Most orders $6-$12 to ship.
 
 **Recommended Testing Strategy**:
 
 Test #1: $75 Threshold
-- Tests if shipping cost blocks conversion on hero products
-- Covers 45% of your current order base
-- Margin-to-shipping ratio of 6.2:1 provides strong protection
-- Estimated monthly cost of free shipping: $X,XXX
+✓ Tests friction removal on hero products
+✓ 45% of orders would qualify
+✓ Margin-to-shipping ratio: 6.2:1 (strong protection)
+✓ Estimated monthly cost: $X,XXX
 
-Test #2: $125 Threshold  
-- Tests if customers will add items to qualify
-- Covers 28% of current orders (sufficient volume)
-- Margin-to-shipping ratio of 8.5:1 (excellent protection)
-- Lower monthly cost: $X,XXX but tests different behavior
+Test #2: $125 Threshold
+✓ Tests basket expansion behavior
+✓ 28% of orders would qualify
+✓ Margin-to-shipping ratio: 8.5:1 (excellent protection)
+✓ Lower monthly cost but tests different behavior
 
 Do Not Test:
-- $40 or below: Too many low-margin items, margin-to-shipping ratio only 2:1
-- $200 or above: Only 8% of orders, insufficient volume for meaningful test"
+✗ $40 or below: Margin risk (2:1 ratio only)
+✗ $200+: Insufficient volume (8% of orders)
+```
 
-## When to Re-run Analysis
+## Important Considerations
 
-- Quarterly, to capture seasonal shifts
+**Data Quality**:
+- Exclude canceled/failed orders
+- Filter outlier shipping costs
+- Ensure sufficient data volume
+- Use recent data (6-12 months)
+
+**Margin Calculations**:
+- Work with averages if detailed margin data unavailable
+- Account for returns if data available
+- Consider category-level margin differences
+
+**Testing Philosophy**:
+- This analysis identifies WHERE to test, not WHETHER free shipping works
+- Always A/B test before full rollout
+- Monitor conversion rate AND profitability
+- Track margin dollars, not just revenue
+
+## Common Pitfalls
+
+1. **Testing Too Low**: Threshold below low-margin product zone
+2. **Testing Without Volume**: <10% of orders at threshold level
+3. **Ignoring Categories**: Different margins may need different thresholds
+4. **Focusing Only on AOV**: Revenue gains mean nothing if margins erode
+5. **No Control Group**: Always A/B test vs control
+
+## When to Re-run
+
+- Quarterly (seasonal shifts)
 - After major product launches
-- When hero product pricing changes significantly
+- When hero product pricing changes
 - If shipping costs increase substantially
-- After major changes to product mix or catalog
+- After major catalog changes
 
-## Integration with Fulfil Workflows
+## Integration Points
 
-This analysis integrates with:
-- **Shopify/Channel Settings**: Threshold configuration for free shipping rules
-- **Promotion Planning**: Coordination with other discount strategies
-- **Inventory Strategy**: Understanding which products drive threshold achievement
-- **Pricing Strategy**: Hero product price point optimization
+Coordinates with:
+- Shopify/channel shipping settings
+- Promotion strategy planning
+- Inventory management (threshold-driving products)
+- Pricing strategy optimization
 
 ## Technical Notes
 
-**Performance Optimization**:
-- Queries are optimized for BigQuery (Fulfil's data warehouse)
-- Default to 6-month lookback; adjust based on order volume
-- Use partitioning on order_date for faster queries
-- Limit product analysis to items with >5 orders to reduce noise
+**Query Optimization**:
+- Optimized for BigQuery (Fulfil's warehouse)
+- 6-month default lookback (adjust for volume)
+- Partition on order_date for performance
+- Limit to items with >5 orders (reduce noise)
 
 **Error Handling**:
-- Handle NULL shipping costs (set to 0 or exclude)
-- Validate order_value > 0 before analysis
-- Check for sufficient data volume before making recommendations
-- Alert if hero product identification unclear (no dominant products)
+- Handle NULL shipping costs appropriately
+- Validate order_value > 0
+- Check sufficient data volume
+- Alert if hero products unclear
 
-## References
+## Methodology Reference
 
-This methodology is based on:
-- Victor Paycro's data-driven threshold optimization framework
-- E-commerce best practices for free shipping strategy
-- Margin-first approach to promotional pricing
+For complete SQL queries and detailed analysis steps, see [METHODOLOGY.md](METHODOLOGY.md).
 
-## Version History
-- v1.0 - Initial skill creation based on Victor Paycro's Twitter thread methodology
+Based on Victor Paycro's data-driven threshold optimization framework.
+
+**Version**: 1.0

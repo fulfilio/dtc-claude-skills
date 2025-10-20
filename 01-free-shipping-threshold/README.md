@@ -1,3 +1,12 @@
+---
+title: Free Shipping Threshold Analysis
+description: Determine your most profitable free shipping threshold using data-driven analysis of order patterns, hero products, and shipping economics.
+author: Fulfil.IO
+version: 1.0
+tags: [shipping, pricing, analytics, optimization]
+learn_more_url: https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills/free-shipping-threshold
+---
+
 # Free Shipping Threshold Analysis Skill
 
 ## Quick Start

@@ -14,136 +14,238 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: #f5f5f5;
-            padding: 20px;
+            color: #171717;
+            background: linear-gradient(to bottom right, #fafafa, #f5f5f5);
+            min-height: 100vh;
+            padding: 40px 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 40px;
             text-align: center;
-            border-radius: 12px;
-            margin-bottom: 40px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 48px;
+        }
+
+        .logo {
+            margin-bottom: 24px;
         }
 
         header h1 {
-            font-size: 2.5em;
-            margin-bottom: 15px;
-            font-weight: 700;
+            font-size: 2em;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #171717;
         }
 
         header p {
-            font-size: 1.2em;
-            opacity: 0.95;
-            margin-bottom: 20px;
+            font-size: 1em;
+            color: #525252;
+            margin-bottom: 24px;
         }
 
         .learn-more {
             display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 12px 30px;
+            background: #171717;
+            color: white;
+            padding: 12px 24px;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: transform 0.2s;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .learn-more:hover {
-            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: scale(1.02);
         }
 
         .downloads {
             background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .downloads h2 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 1.8em;
+            color: #171717;
+            margin-bottom: 24px;
+            font-size: 1.25em;
+            font-weight: 600;
         }
 
         .skill-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
-        }
-
-        .skill-item:last-child {
-            border-bottom: none;
+            padding: 24px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+            border: 1px solid #e5e5e5;
         }
 
         .skill-item:hover {
-            background: #f8f9fa;
+            background: #fafafa;
+            border-color: #d4d4d4;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .skill-title {
+            flex: 1;
         }
 
         .skill-name {
-            font-size: 1.1em;
+            font-size: 1.125em;
+            font-weight: 600;
+            color: #171717;
+            margin-bottom: 4px;
+        }
+
+        .skill-version {
+            font-size: 0.75em;
+            color: #737373;
             font-weight: 500;
-            color: #333;
+        }
+
+        .skill-description {
+            font-size: 0.875em;
+            color: #525252;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .skill-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .skill-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #f5f5f5;
+            color: #525252;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+
+        .skill-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .learn-more-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            color: #171717;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.875em;
+            transition: all 0.2s;
+            border: 1px solid #e5e5e5;
+        }
+
+        .learn-more-btn:hover {
+            border-color: #d4d4d4;
+            background: #fafafa;
         }
 
         .download-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #171717;
             color: white;
-            padding: 10px 24px;
+            padding: 8px 16px;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: opacity 0.2s;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.875em;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .download-btn:hover {
-            opacity: 0.9;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: scale(1.02);
         }
 
         footer {
             text-align: center;
-            padding: 40px 20px;
-            color: #666;
+            padding: 48px 20px 20px;
+            color: #737373;
+            font-size: 0.875em;
         }
 
         footer a {
-            color: #667eea;
+            color: #171717;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
         }
 
         footer a:hover {
-            text-decoration: underline;
+            color: #525252;
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
             header h1 {
-                font-size: 2em;
+                font-size: 1.5em;
             }
 
             header p {
-                font-size: 1em;
+                font-size: 0.875em;
             }
 
-            .skill-item {
+            .skill-header {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .skill-footer {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 15px;
+            }
+
+            .skill-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .learn-more-btn,
+            .download-btn {
+                width: 100%;
+                justify-content: center;
             }
 
             .downloads {
-                padding: 20px;
+                padding: 24px;
             }
         }
     </style>
@@ -151,6 +253,20 @@
 <body>
     <div class="container">
         <header>
+            <div class="logo">
+                <svg width="56" height="72" viewBox="0 0 56 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin: 0 auto; display: block;">
+                    <g clip-path="url(#clip0_mark)">
+                        <path opacity="0.5" d="M5.44018 55.8461H5.38306V63.7379H13.8344C18.4585 63.7379 22.2311 60.2131 22.2311 55.8979V48.0579H13.8344C9.23093 48.0553 5.46874 51.5516 5.44018 55.8461Z" fill="#061B17"/>
+                        <path opacity="0.8" d="M5.38306 33.3508C5.38306 38.239 9.62817 42.1602 14.8184 42.1602H22.1766V48.0615H29.6308C34.7717 48.0615 38.97 44.1429 38.97 39.3403V24.5417H14.8184C9.62817 24.5417 5.38306 28.4629 5.38306 33.3508Z" fill="#061B17"/>
+                        <path d="M14.8184 1.02103C9.62817 1.02103 5.38306 4.98638 5.38306 9.87441C5.38306 14.7623 9.58143 18.6836 14.8184 18.6836H38.9726V24.5409H46.427C51.5679 24.5409 55.7688 20.6222 55.7688 15.8198V1.02103H14.8184Z" fill="#061B17"/>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_mark">
+                            <rect width="50.3858" height="64.7817" fill="white" transform="translate(5.38306 0.000366211)"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+            </div>
             <h1>DTC Claude Skills</h1>
             <p>Data-driven analysis skills for Fulfil merchants</p>
             <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills" class="learn-more">Learn More</a>
@@ -158,17 +274,63 @@
 
         <div class="downloads">
             <h2>Download Skills</h2>
+
+            
             <div class="skill-item">
-                <span class="skill-name">Free Shipping Threshold</span>
-                <a href="downloads/01-free-shipping-threshold.zip" class="download-btn">📥 Download</a>
+                <div class="skill-header">
+                    <div class="skill-title">
+                        <div class="skill-name">Free Shipping Threshold Analysis</div>
+                        <div class="skill-version">v1.0 • by Fulfil.IO</div>
+                    </div>
+                </div>
+
+                <div class="skill-description">
+                    Determine your most profitable free shipping threshold using data-driven analysis of order patterns, hero products, and shipping economics.
+                </div>
+
+                <div class="skill-footer">
+                    <div class="skill-tags">
+                        
+                        <span class="tag">shipping</span>
+                        
+                        <span class="tag">pricing</span>
+                        
+                        <span class="tag">analytics</span>
+                        
+                        <span class="tag">optimization</span>
+                        
+                    </div>
+
+                    <div class="skill-actions">
+                        
+                        <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills/free-shipping-threshold" target="_blank" rel="noopener noreferrer" class="learn-more-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 16v-4"></path>
+                                <path d="M12 8h.01"></path>
+                            </svg>
+                            Learn More
+                        </a>
+                        
+                        <a href="downloads/01-free-shipping-threshold.zip" class="download-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download
+                        </a>
+                    </div>
+                </div>
             </div>
+            
         </div>
 
         <footer>
             <p>
                 <a href="https://github.com/fulfilio/dtc-claude-skills" target="_blank">View on GitHub</a> •
                 <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/resources/claude-skills">Documentation</a> •
-                <a href="https://github.com/fulfilio/mcp-server-fulfil">Fulfil MCP Connector</a>
+                <a href="https://fulfil-website-b7a103a9a1c8.herokuapp.com/platform/ai/">AI in Fulfil</a>
             </p>
         </footer>
     </div>

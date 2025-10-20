@@ -1,0 +1,40 @@
+name: Build Skills
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '[0-9][0-9]-*/**'
+      - 'build.sh'
+      - '.github/workflows/build-skills.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run build script
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          git diff --quiet docs/ || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/
+          git commit -m "Build skill packages [skip ci]"
+          git push

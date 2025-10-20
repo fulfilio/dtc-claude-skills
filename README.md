@@ -17,7 +17,7 @@ Download ready-to-use skills from the Fulfil website:
 ## Available Skills
 
 ### 1. Free Shipping Threshold Analysis
-**[Download](https://fulfil.io/static/downloads/claude-skills/01-free-shipping-threshold.zip)** | [Details](./01-free-shipping-threshold/README.md)
+**[Download](https://fulfilio.github.io/dtc-claude-skills/downloads/01-free-shipping-threshold.zip)** | [Details](./01-free-shipping-threshold/README.md)
 
 Determine your most profitable free shipping threshold using data-driven analysis of your order patterns.
 
@@ -36,15 +36,16 @@ For detailed instructions, see the [full documentation](https://fulfil.io/resour
 
 ### Building Skill Packages
 
-Skills are built and packaged as part of the [fulfil.io website](https://github.com/fulfilio/website) deployment process.
+Skills are automatically built and deployed to GitHub Pages via GitHub Actions.
 
 **How it works**:
-1. This repository is included as a git submodule in the website repository
-2. The website's build script (`scripts/build_claude_skills.py`) scans for skill directories
-3. Each skill is packaged into a ZIP file and copied to `static/downloads/claude-skills/`
-4. Skills are served directly from the website at `/static/downloads/claude-skills/`
+1. When changes are pushed to the `master` branch, GitHub Actions workflow triggers
+2. The workflow scans for skill directories matching the `##-skill-name` pattern
+3. Each skill is packaged into a ZIP file in the `downloads/` directory
+4. The downloads directory is deployed to GitHub Pages
+5. Skills are available at `https://fulfilio.github.io/dtc-claude-skills/downloads/`
 
-The website build process automatically creates ZIP packages from all skill directories matching the `##-skill-name` pattern.
+The build process automatically creates ZIP packages from all skill directories that contain a `SKILL.md` file.
 
 ### Skill Structure
 
@@ -68,7 +69,7 @@ We welcome contributions! To add a new skill:
 3. Include all three markdown files (SKILL.md, README.md, QUICK_REFERENCE.md)
 4. Submit a pull request
 
-Your skill will be automatically packaged and deployed as part of the fulfil.io website build process once merged.
+Your skill will be automatically packaged and deployed to GitHub Pages via GitHub Actions once merged.
 
 For contribution guidelines and skill development best practices, see the [documentation](https://fulfil.io/resources/claude-skills) and [SKILLS_BEST_PRACTICES.md](SKILLS_BEST_PRACTICES.md).
 

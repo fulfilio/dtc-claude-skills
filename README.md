@@ -21,6 +21,11 @@ Download ready-to-use skills from the Fulfil website:
 
 Determine your most profitable free shipping threshold using data-driven analysis of your order patterns.
 
+### 2. Fulfillment Optimization
+**[Download](https://fulfilio.github.io/dtc-claude-skills/downloads/02-fulfillment-optimization.zip)** | [Details](./02-fulfillment-optimization/README.md)
+
+Analyze your shipment backlog and generate actionable recommendations for clearing orders efficiently.
+
 ---
 
 ## Quick Start
